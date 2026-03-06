@@ -9,6 +9,6 @@ BRANCH:tie-jailhouse:bsp-ti-6_12 = "ti-linux-6.12.y-jailhouse"
 BRANCH:tie-jailhouse:bsp-ti-6_18 = "ti-linux-6.18.y-jailhouse-wip"
 
 SRCREV:tie-jailhouse:bsp-ti-6_12 = "229a48602ad1557612a4ffabec6a3cbcdd745f87"
-SRCREV:tie-jailhouse:bsp-ti-6_18 = "262712414cf750b96f0227f8d98a93c30aeb1ce4"
+SRCREV:tie-jailhouse:bsp-ti-6_18 = "4199bf1f37149d00ce83c659faff2cbbf6cf4a97"
 
 KERNEL_GIT_URI:tie-jailhouse = "git://git.ti.com/git/processor-sdk/linux.git"
