@@ -100,7 +100,7 @@ RDEPENDS:pyjailhouse = "python3-core python3-ctypes python3-fcntl python3-shell"
 
 RRECOMMENDS:${PN} = "${PN}-tools"
 
-INSANE_SKIP:${PN} = "ldflags usrmerge buildpaths"
+INSANE_SKIP:${PN} = "ldflags usrmerge"
 INSANE_SKIP:${PN}-dbg = "usrmerge buildpaths"
 
 KERNEL_MODULE_AUTOLOAD += "jailhouse"

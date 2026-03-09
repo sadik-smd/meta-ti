@@ -47,7 +47,7 @@ B = "${S}"
 
 DEPENDS = "virtual/kernel dtc-native python3-mako-native python3-mako make-native"
 
-inherit module python3native bash-completion deploy setuptools3
+inherit python3native bash-completion deploy
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 COMPATIBLE_MACHINE = "(ti-soc)"
@@ -80,8 +80,7 @@ USER_SPACE_CFLAGS = '${CFLAGS} -DLIBEXECDIR=\\\"${libexecdir}\\\" \
 
 TOOLS_SRC_DIR = "${S}/tools"
 
-EXTRA_OEMAKE = "ARCH=${JH_ARCH} CROSS_COMPILE=${TARGET_PREFIX} CC="${CC}" KDIR=${STAGING_KERNEL_BUILDDIR}"
+EXTRA_OEMAKE = "V=1 ARCH=${JH_ARCH} CROSS_COMPILE=${TARGET_PREFIX} CC="${CC}" KDIR=${STAGING_KERNEL_BUILDDIR} \
+    KCFLAGS='-ffile-prefix-map=${STAGING_KERNEL_BUILDDIR}/= -ffile-prefix-map=${STAGING_KERNEL_DIR}/='"
 
-do_compile() {
-        oe_runmake V=1
-}
+
