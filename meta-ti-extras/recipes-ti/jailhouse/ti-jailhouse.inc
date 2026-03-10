@@ -6,12 +6,10 @@ HOMEPAGE = "https://github.com/siemens/jailhouse"
 SECTION = "jailhouse"
 
 LICENSE = "GPL-2.0-only & BSD-2-Clause"
-
 LIC_FILES_CHKSUM = " \
     file://COPYING;md5=9fa7f895f96bde2d47fd5b7d95b6ba4d \
 "
 
-COMPATIBLE_MACHINE = "am62xx|am62pxx|am62lxx"
 TARGET_CC_ARCH += "${LDFLAGS}"
 PV = "0.12+git"
 SRCREV = "09226608e2d4944971ee5988ac2293cc2bbc0c15"
@@ -21,9 +19,6 @@ SRC_URI = " \
 "
 
 # Set jailhouse architecture JH_ARCH variable
-#
-# return value must match one of architectures supported by jailhouse
-#
 valid_jh_archs = "x86 arm"
 
 def map_jh_arch(a, d):
@@ -32,55 +27,64 @@ def map_jh_arch(a, d):
     valid_jh_archs = d.getVar('valid_jh_archs', True).split()
 
     if   re.match('(i.86|athlon|x86.64)$', a):  return 'x86'
-    elif re.match('armeb$', a):                 return 'arm'
-    elif re.match('aarch64$', a):               return 'arm64'
-    elif re.match('aarch64_be$', a):            return 'arm64'
-    elif a in valid_jh_archs:                   return a
+    elif re.match('armeb$', a):                  return 'arm'
+    elif re.match('aarch64$', a):                return 'arm64'
+    elif re.match('aarch64_be$', a):             return 'arm64'
+    elif a in valid_jh_archs:                    return a
     else:
         bb.error("cannot map '%s' to a jailhouse supported architecture" % a)
 
 export JH_ARCH = "${@map_jh_arch(d.getVar('TARGET_ARCH', True), d)}"
 
-COMPATIBLE_HOST = "(i.86|x86_64|arm|aarch64).*-linux"
+COMPATIBLE_HOST    = "(i.86|x86_64|arm|aarch64).*-linux"
+COMPATIBLE_MACHINE = "am62xx|am62pxx|am62lxx"
 
 B = "${S}"
 
 DEPENDS = "virtual/kernel dtc-native python3-mako-native python3-mako make-native"
 
-inherit python3native bash-completion deploy
+# module-base  : provides KERNEL_SRC, MODULE_DIR, module helpers — no do_compile override
+# kernel-module-split : handles .ko packaging, depmod, KERNEL_MODULE_AUTOLOAD, etc.
+# No 'module' inherit — avoids the do_compile conflict entirely
+inherit module-base kernel-module-split python3native bash-completion deploy
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-COMPATIBLE_MACHINE = "(ti-soc)"
 
-JH_DATADIR ?= "${datadir}/jailhouse"
-JH_EXEC_DIR ?= "${libexecdir}/jailhouse"
-CELL_DIR ?= "${JH_DATADIR}/cells"
+JH_DATADIR   ?= "${datadir}/jailhouse"
+JH_EXEC_DIR  ?= "${libexecdir}/jailhouse"
+CELL_DIR     ?= "${JH_DATADIR}/cells"
 CELLCONF_DIR ?= "${JH_DATADIR}/configs"
-INMATES_DIR ?= "${JH_DATADIR}/inmates"
+INMATES_DIR  ?= "${JH_DATADIR}/inmates"
 
 JH_SYSCONFIG_CELL ?= ""
-JH_SYSCONFIG_CELL:am62xx ?= "k3-am625-sk.cell"
-JH_SYSCONFIG_CELL:am65xx ?= "k3-am654-idk.cell"
-JH_SYSCONFIG_CELL:am62pxx ?= "k3-am62p5-sk.cell"
-JH_SYSCONFIG_CELL:am62lxx ?= "k3-am62l3-evm.cell"
-JH_SYSCONFIG_CELL:j7 ?= "k3-j721e-evm.cell"
+JH_SYSCONFIG_CELL:am62xx    ?= "k3-am625-sk.cell"
+JH_SYSCONFIG_CELL:am65xx    ?= "k3-am654-idk.cell"
+JH_SYSCONFIG_CELL:am62pxx   ?= "k3-am62p5-sk.cell"
+JH_SYSCONFIG_CELL:am62lxx   ?= "k3-am62l3-evm.cell"
+JH_SYSCONFIG_CELL:j7        ?= "k3-j721e-evm.cell"
 JH_SYSCONFIG_CELL:j7200-evm ?= "k3-j7200-evm.cell"
 
-do_configure() {
-        if [ -d ${STAGING_DIR_HOST}/${CELLCONF_DIR} ];
-        then
-            cp ${STAGING_DIR_HOST}/${CELLCONF_DIR}/*.c ${S}/configs/
-        fi
-}
+# EXTRA_OEMAKE is automatically picked up by oe_runmake in base.bbclass do_compile
+# No do_compile override needed — base.bbclass do_compile calls oe_runmake which
+# expands EXTRA_OEMAKE, passing KDIR, ARCH, CROSS_COMPILE etc. to Jailhouse build
+EXTRA_OEMAKE = "V=1 \
+    ARCH=${JH_ARCH} \
+    CROSS_COMPILE=${TARGET_PREFIX} \
+    CC="${CC}" \
+    KDIR=${STAGING_KERNEL_BUILDDIR} \
+    KCFLAGS='-ffile-prefix-map=${STAGING_KERNEL_BUILDDIR}/= \
+             -ffile-prefix-map=${STAGING_KERNEL_DIR}/='"
 
-USER_SPACE_CFLAGS = '${CFLAGS} -DLIBEXECDIR=\\\"${libexecdir}\\\" \
-                    -DJAILHOUSE_VERSION=\\\"$JAILHOUSE_VERSION\\\" \
-                    -Wall -Wextra -Wmissing-declarations -Wmissing-prototypes -Werror \
-                    -I../driver'
+USER_SPACE_CFLAGS = '${CFLAGS} \
+    -DLIBEXECDIR=\\\"${libexecdir}\\\" \
+    -DJAILHOUSE_VERSION=\\\"$JAILHOUSE_VERSION\\\" \
+    -Wall -Wextra -Wmissing-declarations -Wmissing-prototypes -Werror \
+    -I../driver'
 
 TOOLS_SRC_DIR = "${S}/tools"
 
-EXTRA_OEMAKE = "V=1 ARCH=${JH_ARCH} CROSS_COMPILE=${TARGET_PREFIX} CC="${CC}" KDIR=${STAGING_KERNEL_BUILDDIR} \
-    KCFLAGS='-ffile-prefix-map=${STAGING_KERNEL_BUILDDIR}/= -ffile-prefix-map=${STAGING_KERNEL_DIR}/='"
-
-
+do_configure() {
+    if [ -d ${STAGING_DIR_HOST}/${CELLCONF_DIR} ]; then
+        cp ${STAGING_DIR_HOST}/${CELLCONF_DIR}/*.c ${S}/configs/
+    fi
+}
