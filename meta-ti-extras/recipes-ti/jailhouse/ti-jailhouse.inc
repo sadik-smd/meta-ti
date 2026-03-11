@@ -12,10 +12,10 @@ LIC_FILES_CHKSUM = " \
 
 TARGET_CC_ARCH += "${LDFLAGS}"
 PV = "0.12+git"
-SRCREV = "09226608e2d4944971ee5988ac2293cc2bbc0c15"
+SRCREV = "b44c3548252bb3818b0dd0815728ca210d8fac2b"
 BRANCH = "master"
 SRC_URI = " \
-    git://github.com/sadik-smd/ti-jailhouse.git;protocol=https;branch=${BRANCH} \
+    git://git.ti.com/git/jailhouse/ti-jailhouse.git;protocol=https;branch=${BRANCH} \
 "
 
 # Set jailhouse architecture JH_ARCH variable
